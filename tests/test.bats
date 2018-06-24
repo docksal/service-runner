@@ -17,12 +17,52 @@ teardown () {
 # Uncomment below, then comment skip in the test you want to debug. When done, reverse.
 #SKIP=1
 
+@test "Confirm Current User Is Docker" {
+	[[ $SKIP == 1 ]] && skip
+
+	run docker run -it --name "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		whoami
+
+	[[ $status -eq 0 ]] &&
+	[[ "${output}" =~ "docker" ]]
+	unset output
+
+	# Clean Up
+	make clean
+}
+
+@test "Confirm Current Location Is /var/www" {
+	[[ $SKIP == 1 ]] && skip
+
+	run docker run -it --name "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		pwd
+
+	[[ $status -eq 0 ]] &&
+	[[ "${output}" =~ "/var/www" ]]
+	unset output
+
+	# Clean Up
+	make clean
+}
+
 @test "Confirm GIT Installed" {
 	[[ $SKIP == 1 ]] && skip
 
-	make start
+	run docker run -it --name "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		git --version
 
-	run docker exec -it "$NAME" sh -c 'git --version'
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "git version" ]]
 	unset output
@@ -34,21 +74,32 @@ teardown () {
 @test "Confirm GIT Downloads" {
 	[[ $SKIP == 1 ]] && skip
 
-	docker run --name "$NAME" -v $(pwd)/tests:/root "$IMAGE" sh -c 'cd /root; git clone https://github.com/docksal/drupal8.git;'
+	docker run -it --name "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		git clone https://github.com/docksal/drupal8.git
 
 	[[ -d $(pwd)/tests/drupal8 ]] &&
 	[[ -f $(pwd)/tests/drupal8/docroot/index.php ]]
 
-	rm -rf ${pwd}/tests/drupal8
+	rm -rf $(pwd)/tests/drupal8
 
 	# Clean Up
-    make clean
+	make clean
 }
 
 @test "Confirm CURL Installed" {
 	[[ $SKIP == 1 ]] && skip
 
-	run docker run -it "$NAME" "$IMAGE" sh -c 'curl --version'
+	run docker run -it "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		curl --version
+
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "curl version" ]]
 	unset output
@@ -60,7 +111,13 @@ teardown () {
 @test "Confirm Curl Downloads" {
 	[[ $SKIP == 1 ]] && skip
 
-	docker run -it --name "$NAME" -v $(pwd)/tests:/root "$IMAGE" sh -c 'cd /root; curl -O services.yml "https://raw.githubusercontent.com/docksal/docksal/develop/stacks/services.yml";'
+	docker run -it \
+		--name "$NAME" \
+		-e "HOST_UID=${UID}" \
+		-e "HOST_GID=${GID}" \
+		-v $(pwd)/tests:/var/www/ \
+		"$IMAGE" \
+		curl -O services.yml "https://raw.githubusercontent.com/docksal/docksal/develop/stacks/services.yml"
 
 	run grep "This is a library of preconfigured services for Docksal" $(pwd)/tests/services.yml
 	[[ -f $(pwd)/tests/services.yml ]] &&
@@ -69,5 +126,5 @@ teardown () {
 	rm -rf ${pwd}/tests/services.yml
 
 	# Clean Up
-    make clean
+	make clean
 }
