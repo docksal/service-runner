@@ -1,8 +1,5 @@
 #!/usr/bin/env bats
 
-HOST_UID=$(id -u)
-HOST_GID=$(id -g)
-
 # Debugging
 teardown () {
 	echo

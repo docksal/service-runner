@@ -7,6 +7,8 @@ env:
   global:
     - REPO=docksal/runner
     - VERSION=curl-git
+    - HOST_UID=$(id -u)
+    - HOST_GID=$(id -g)
 
 install:
   - curl -fsSL get.docksal.io | sh
@@ -14,7 +16,7 @@ install:
   - fin sysinfo
 
 script:
-  - export HOST_UID=$(id -u); export HOST_GID=$(id -g); make; make test
+  - make && make test
 
 after_failure:
   - make logs
