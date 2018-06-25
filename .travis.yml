@@ -14,7 +14,7 @@ install:
   - fin sysinfo
 
 script:
-  - make && make test
+  - export HOST_UID=$(id -u); export HOST_GID=$(id -g); make; make test
 
 after_failure:
   - make logs
