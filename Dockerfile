@@ -8,7 +8,6 @@ RUN apk add --no-cache \
 	git \
 	supervisor \
 	sudo \
-	su-exec \
 	&& rm -rf /var/cache/apk/*
 
 ENV \
@@ -24,6 +23,14 @@ RUN set -xe; \
 	groupadd docker -g 1000; \
 	useradd -m -s /bin/bash -u 1000 -g 1000 -p docker docker; \
 	echo 'docker ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers;
+
+# Install gosu and give access to the docker user primary group to use it.
+# gosu is used instead of sudo to start the main container process (pid 1) in a docker friendly way.
+# https://github.com/tianon/gosu
+RUN set -xe; \
+	curl -sSL "https://github.com/tianon/gosu/releases/download/1.10/gosu-amd64" -o /usr/local/bin/gosu; \
+	chown root:"$(id -gn docker)" /usr/local/bin/gosu; \
+	chmod +sx /usr/local/bin/gosu
 
 COPY entrypoint.sh /opt/entrypoint.sh
 
