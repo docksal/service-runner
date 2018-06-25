@@ -49,7 +49,7 @@ teardown () {
 		-e HOST_UID \
 		-e HOST_GID \
 		"$IMAGE" \
-		'echo $UID'
+		'id -u'
 
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "${UID}" ]]
@@ -63,11 +63,11 @@ teardown () {
 		-e HOST_UID \
 		-e HOST_GID \
 		"$IMAGE" \
-        'echo $GID'
+		'id -g'
 
-    [[ $status -eq 0 ]] &&
-    [[ "${output}" =~ "${GID}" ]]
-    unset output
+	[[ $status -eq 0 ]] &&
+	[[ "${output}" =~ "${GID}" ]]
+	unset output
 }
 
 @test "Confirm Current Location Is /home/docker" {
@@ -140,7 +140,8 @@ teardown () {
 		curl --version
 
 	[[ $status -eq 0 ]] &&
-	[[ "${output}" =~ "curl version" ]]
+	[[ "${output}" =~ "curl" ]] &&
+	[[ "${output}" =~ "Release-Date:" ]]
 	unset output
 }
 
