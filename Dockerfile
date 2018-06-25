@@ -21,7 +21,7 @@ ENV \
 RUN set -xe; \
 	# Create a regular user/group "docker" (uid = 1000, gid = 1000 ) with access to sudo
 	groupadd docker -g 1000; \
-	useradd -m -s /bin/bash -u 1000 -g 1000 -p docker docker; \
+	useradd -m -s /bin/sh -u 1000 -g 1000 -p docker docker; \
 	echo 'docker ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers;
 
 # Install gosu and give access to the docker user primary group to use it.
