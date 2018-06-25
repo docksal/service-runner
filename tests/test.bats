@@ -1,5 +1,8 @@
 #!/usr/bin/env bats
 
+HOST_UID=$(id -u)
+HOST_GUD=$(id -g)
+
 # Debugging
 teardown () {
 	echo
@@ -20,64 +23,100 @@ teardown () {
 @test "Confirm Current User Is Docker" {
 	[[ $SKIP == 1 ]] && skip
 
-	run docker run -it --name "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
 		"$IMAGE" \
 		whoami
 
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "docker" ]]
 	unset output
-
-	# Clean Up
-	make clean
 }
 
-@test "Confirm Current Location Is /var/www" {
+@test "Confirm Current User Matches Host" {
 	[[ $SKIP == 1 ]] && skip
 
-	run docker run -it --name "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
+		"$IMAGE" \
+		'echo $UID'
+
+	[[ $status -eq 0 ]] &&
+	[[ "${output}" =~ "${UID}" ]]
+	unset output
+
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
+		"$IMAGE" \
+        'echo $GID'
+
+    [[ $status -eq 0 ]] &&
+    [[ "${output}" =~ "${GID}" ]]
+    unset output
+}
+
+@test "Confirm Current Location Is /home/docker" {
+	[[ $SKIP == 1 ]] && skip
+
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
+		"$IMAGE" \
 		"$IMAGE" \
 		pwd
 
 	[[ $status -eq 0 ]] &&
-	[[ "${output}" =~ "/var/www" ]]
+	[[ "${output}" =~ "/home/docker" ]]
 	unset output
-
-	# Clean Up
-	make clean
 }
 
 @test "Confirm GIT Installed" {
 	[[ $SKIP == 1 ]] && skip
 
-	run docker run -it --name "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
 		"$IMAGE" \
 		git --version
 
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "git version" ]]
 	unset output
-
-	# Clean Up
-	make clean
 }
 
 @test "Confirm GIT Downloads" {
 	[[ $SKIP == 1 ]] && skip
 
-	docker run -it --name "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+	docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
 		"$IMAGE" \
 		git clone https://github.com/docksal/drupal8.git
 
@@ -85,46 +124,42 @@ teardown () {
 	[[ -f $(pwd)/tests/drupal8/docroot/index.php ]]
 
 	rm -rf $(pwd)/tests/drupal8
-
-	# Clean Up
-	make clean
 }
 
 @test "Confirm CURL Installed" {
 	[[ $SKIP == 1 ]] && skip
 
-	run docker run -it "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+	run docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
+		--name "$NAME" \
+		-e HOST_UID \
+		-e HOST_GID \
 		"$IMAGE" \
 		curl --version
 
 	[[ $status -eq 0 ]] &&
 	[[ "${output}" =~ "curl version" ]]
 	unset output
-
-	# Clean Up
-	make clean
 }
 
 @test "Confirm Curl Downloads" {
 	[[ $SKIP == 1 ]] && skip
 
 	docker run -it \
+		--rm \
+		--mount type=bind,src=$(pwd)/tests,dst=/var/www \
+		--mount type=volume,src=docksal_ssh_agent,dst=/.sshagent,readonly \
 		--name "$NAME" \
-		-e "HOST_UID=${UID}" \
-		-e "HOST_GID=${GID}" \
-		-v $(pwd)/tests:/var/www/ \
+		-e HOST_UID \
+		-e HOST_GID \
 		"$IMAGE" \
-		curl -O services.yml "https://raw.githubusercontent.com/docksal/docksal/develop/stacks/services.yml"
+		curl -O services.yml https://raw.githubusercontent.com/docksal/docksal/develop/stacks/services.yml
 
 	run grep "This is a library of preconfigured services for Docksal" $(pwd)/tests/services.yml
 	[[ -f $(pwd)/tests/services.yml ]] &&
 	[[ $status -eq 0 ]]
 
 	rm -rf ${pwd}/tests/services.yml
-
-	# Clean Up
-	make clean
 }
