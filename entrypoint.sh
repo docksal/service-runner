@@ -23,10 +23,10 @@ uid_gid_reset ()
 # Make sure permissions are correct (after uid/gid change and COPY operations in Dockerfile)
 # To not bloat the image size, permissions on the home folder are reset at runtime.
 echo_debug "Resetting permissions on $HOME_DIR and /var/www..."
-chown "${HOST_UID-:1000}:${HOST_GID:-1000}" -R "$HOME_DIR"
+chown "${HOST_UID-:docker}:${HOST_GID:-docker}" -R "$HOME_DIR"
 # Docker resets the project root folder permissions to 0:0 when runner is recreated (e.g. an env variable updated).
 # We apply a fix/workaround for this at startup (non-recursive).
-chown "${HOST_UID-:1000}:${HOST_GID:-1000}" -R /var/www
+chown "${HOST_UID-:docker}:${HOST_GID:-docker}" -R /var/www
 
 # Any other command (assuming container already running)
 exec gosu docker sh -c "$*"
